@@ -45,9 +45,13 @@ def generate_insight(data_summary):
 
     Jawab dalam bahasa Indonesia, singkat, dan jelas.
     """
-    model = genai.GenerativeModel(model_name="gemini-pro")
-    response = model.generate_content(prompt)
-    return response.text.strip()
+    try:
+        model = genai.GenerativeModel(model_name="gemini-pro")
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        return f"(Gagal menghasilkan insight: {e})"
+
 
 # ========================== Streamlit UI ==========================
 st.title("🧾 Binary Personal Finance Tracker v1")
