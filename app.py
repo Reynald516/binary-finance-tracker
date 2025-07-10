@@ -14,7 +14,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Setup kredensial dan akses Google Sheets via st.secrets
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds_dict = json.loads(st.secrets["GOOGLE_CREDS"])  # Ambil dari secrets
+creds_dict = json.loads(st.secrets["GOOGLE_CREDS"])  # Ambil dari secrets TOML
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
@@ -78,6 +78,7 @@ if not df.empty:
     df.columns = df.columns.str.strip()
     df["Tanggal"] = pd.to_datetime(df["Tanggal"], errors='coerce')
     df["Jumlah"] = pd.to_numeric(df["Jumlah"], errors='coerce').fillna(0)
+    df["Tipe"] = df["Tipe"].str.strip().str.capitalize()  # 🔧 Normalisasi kolom Tipe
 
     st.subheader("📄 10 Catatan Terakhir")
     st.dataframe(df.tail(10))
@@ -97,20 +98,33 @@ if not df.empty:
     st.subheader("🤖 Insight Keuangan dari AI")
 
     try:
-        pengeluaran = df[df["Tipe"] == "Pengeluaran"]
+        # Default Series kosong kalau belum ada datanya
+        pemasukan = bulanan.get("Pemasukan", pd.Series(dtype=float))
+        pengeluaran = bulanan.get("Pengeluaran", pd.Series(dtype=float))
+
+        pengeluaran_df = df[df["Tipe"] == "Pengeluaran"]
+        kategori_terbesar = (
+            pengeluaran_df.groupby("Kategori")["Jumlah"]
+            .sum()
+            .sort_values(ascending=False)
+            .head(1)
+        )
+
         summary_text = f"""
-        Total pemasukan bulan ini: Rp {int(bulanan.get("Pemasukan", pd.Series()).sum()):,}
-        Total pengeluaran bulan ini: Rp {int(bulanan.get("Pengeluaran", pd.Series()).sum()):,}
+        Total pemasukan bulan ini: Rp {int(pemasukan.sum()):,}
+        Total pengeluaran bulan ini: Rp {int(pengeluaran.sum()):,}
 
         Kategori pengeluaran terbesar minggu ini:
-        {pengeluaran.groupby("Kategori")["Jumlah"].sum().sort_values(ascending=False).head(1).to_string()}
+        {kategori_terbesar.to_string()}
         """
+
         if st.button("🔍 Dapatkan Insight AI"):
             with st.spinner("Sedang menganalisis..."):
                 ai_result = generate_insight(summary_text)
                 st.success("Insight berhasil dihasilkan!")
                 st.markdown(f"💬 **AI Insight:** {ai_result}")
-    except:
+    except Exception as e:
         st.warning("Belum cukup data untuk menghasilkan insight.")
+        st.text(f"(Debug: {e})")
 else:
     st.info("Belum ada data keuangan tercatat.")
