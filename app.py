@@ -3,7 +3,7 @@ import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
-import openai
+from openai import OpenAI
 import json
 import os
 from dotenv import load_dotenv
@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 # Load API key dari .env
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
+client_ai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Setup kredensial dan akses Google Sheets via st.secrets
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -45,15 +47,14 @@ def generate_insight(data_summary):
 
     Jawab dalam bahasa Indonesia, singkat, dan jelas.
     """
-
-    response = openai.ChatCompletion.create(
+    response = client_ai.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=150,
         temperature=0.7,
     )
-
-    return response.choices[0].message["content"]
+    
+    return response.choices[0].message.content
 
 # ========================== Streamlit UI ==========================
 st.title("🧾 Binary Personal Finance Tracker v1")
