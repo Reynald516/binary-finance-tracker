@@ -46,7 +46,7 @@ def generate_insight(data_summary):
     Jawab dalam bahasa Indonesia, singkat, dan jelas.
     """
     try:
-        model = genai.GenerativeModel(model_name="gemini-pro")
+        model = genai.GenerativeModel(model_name="models/gemini-pro")
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
