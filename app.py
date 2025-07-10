@@ -10,8 +10,6 @@ from dotenv import load_dotenv
 
 # Load API key dari .env
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
 client_ai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Setup kredensial dan akses Google Sheets via st.secrets
