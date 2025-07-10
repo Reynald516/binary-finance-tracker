@@ -4,6 +4,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 import openai
+import json
 import os
 from dotenv import load_dotenv
 
@@ -11,9 +12,10 @@ from dotenv import load_dotenv
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Setup kredensial dan akses Google Sheets
+# Setup kredensial dan akses Google Sheets via st.secrets
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+creds_dict = json.loads(st.secrets["GOOGLE_CREDS"])  # Ambil dari secrets
+creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
 # Buka spreadsheet dan worksheet
@@ -23,11 +25,11 @@ sheet = client.open("Binary Finance Data").sheet1
 def get_data():
     values = sheet.get_all_values()
     if not values or len(values) < 2:
-        return pd.DataFrame()  # Kalau kosong, return dataframe kosong
+        return pd.DataFrame()
     headers = values[0]
     rows = values[1:]
     df = pd.DataFrame(rows, columns=headers)
-    df.columns = df.columns.str.strip()  # hilangkan spasi tak sengaja
+    df.columns = df.columns.str.strip()
     return df
 
 # Fungsi simpan data ke Google Sheets
@@ -73,7 +75,7 @@ st.header("📊 Ringkasan Data")
 df = get_data()
 
 if not df.empty:
-    df.columns = df.columns.str.strip()  # pastikan kolom bersih dari spasi
+    df.columns = df.columns.str.strip()
     df["Tanggal"] = pd.to_datetime(df["Tanggal"], errors='coerce')
     df["Jumlah"] = pd.to_numeric(df["Jumlah"], errors='coerce').fillna(0)
 
