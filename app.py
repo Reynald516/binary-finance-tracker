@@ -14,14 +14,14 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Setup kredensial dan akses Google Sheets via st.secrets
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds_dict = json.loads(st.secrets["GOOGLE_CREDS"])  # Ambil dari secrets TOML
+creds_dict = json.loads(st.secrets["GOOGLE_CREDS"])
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
 # Buka spreadsheet dan worksheet
 sheet = client.open("Binary Finance Data").sheet1
 
-# Fungsi ambil data dari Google Sheets
+# ==================== Fungsi Google Sheets ====================
 def get_data():
     values = sheet.get_all_values()
     if not values or len(values) < 2:
@@ -32,12 +32,18 @@ def get_data():
     df.columns = df.columns.str.strip()
     return df
 
-# Fungsi simpan data ke Google Sheets
 def simpan_data(tanggal, kategori, tipe, jumlah, keterangan):
     sheet.append_row([tanggal.strftime("%Y/%m/%d"), kategori, tipe, jumlah, keterangan])
 
-# Fungsi generate insight dari AI (Gemini)
-# Fungsi generate insight dari AI (Gemini)
+def hapus_baris(index):
+    sheet.delete_rows(index)
+
+def hapus_semua_data():
+    header = sheet.row_values(1)
+    sheet.clear()
+    sheet.append_row(header)
+
+# ==================== Fungsi AI Insight ====================
 def generate_insight(data_summary):
     prompt = f"""
     Kamu adalah asisten keuangan pribadi. Berdasarkan data berikut ini, berikan insight/saran keuangan singkat:
@@ -47,7 +53,7 @@ def generate_insight(data_summary):
     Jawab dalam bahasa Indonesia, singkat, dan jelas.
     """
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")  # 🔁 ganti model lebih ringan
+        model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
@@ -94,7 +100,6 @@ if not df.empty:
     st.bar_chart(bulanan)
 
     st.subheader("🤖 Insight Keuangan dari AI")
-
     try:
         pemasukan = bulanan.get("Pemasukan", pd.Series(dtype=float))
         pengeluaran = bulanan.get("Pengeluaran", pd.Series(dtype=float))
@@ -123,5 +128,30 @@ if not df.empty:
     except Exception as e:
         st.warning("Belum cukup data untuk menghasilkan insight.")
         st.text(f"(Debug: {e})")
+
+    # ========================== Fitur Hapus Data ==========================
+    st.markdown("---")
+    st.subheader("🧹 Kelola Data")
+
+    with st.expander("❌ Hapus Catatan Tertentu"):
+        df_display = df.copy()
+        df_display["Index Sheet"] = df_display.index + 2  # index + 2 karena header di baris 1
+        st.dataframe(df_display)
+
+        selected_index = st.number_input("Masukkan Index Sheet yang ingin dihapus", min_value=2, step=1)
+        if st.button("🗑️ Hapus Catatan Ini"):
+            try:
+                hapus_baris(int(selected_index))
+                st.success(f"✅ Baris ke-{int(selected_index)} berhasil dihapus.")
+            except Exception as e:
+                st.error(f"Gagal menghapus baris: {e}")
+
+    with st.expander("⚠️ Hapus Semua Data"):
+        if st.button("🧨 Hapus Semua Data (Reset Sheet)"):
+            confirm = st.radio("Yakin ingin hapus semua data?", ["Tidak", "Ya"])
+            if confirm == "Ya":
+                hapus_semua_data()
+                st.success("✅ Semua data berhasil dihapus (kecuali header).")
+
 else:
     st.info("Belum ada data keuangan tercatat.")
