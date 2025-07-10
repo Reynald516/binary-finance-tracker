@@ -37,6 +37,7 @@ def simpan_data(tanggal, kategori, tipe, jumlah, keterangan):
     sheet.append_row([tanggal.strftime("%Y/%m/%d"), kategori, tipe, jumlah, keterangan])
 
 # Fungsi generate insight dari AI (Gemini)
+# Fungsi generate insight dari AI (Gemini)
 def generate_insight(data_summary):
     prompt = f"""
     Kamu adalah asisten keuangan pribadi. Berdasarkan data berikut ini, berikan insight/saran keuangan singkat:
@@ -46,12 +47,11 @@ def generate_insight(data_summary):
     Jawab dalam bahasa Indonesia, singkat, dan jelas.
     """
     try:
-        model = genai.GenerativeModel("gemini-pro")  # ✅ pakai format resmi
+        model = genai.GenerativeModel("gemini-1.5-flash")  # 🔁 ganti model lebih ringan
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
         return f"(Gagal menghasilkan insight: {e})"
-
 
 # ========================== Streamlit UI ==========================
 st.title("🧾 Binary Personal Finance Tracker v1")
