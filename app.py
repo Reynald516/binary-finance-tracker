@@ -93,6 +93,18 @@ if not df.empty:
     mingguan = df.groupby(["Minggu", "Tipe"])["Jumlah"].sum().unstack().fillna(0)
     bulanan = df.groupby(["Bulan", "Tipe"])["Jumlah"].sum().unstack().fillna(0)
 
+        # Ringkasan total uang
+    total_pemasukan = df[df["Tipe"] == "Pemasukan"]["Jumlah"].sum()
+    total_pengeluaran = df[df["Tipe"] == "Pengeluaran"]["Jumlah"].sum()
+    total_saldo = total_pemasukan - total_pengeluaran
+
+    st.subheader("💵 Ringkasan Keuangan Saat Ini")
+    st.markdown(f"""
+    - **Total Pemasukan:** Rp {int(total_pemasukan):,}
+    - **Total Pengeluaran:** Rp {int(total_pengeluaran):,}
+    - **Total Uang Sekarang:** Rp {int(total_saldo):,}
+    """)
+
     st.subheader("📆 Grafik Mingguan")
     st.bar_chart(mingguan)
 
